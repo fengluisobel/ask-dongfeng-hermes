@@ -42,7 +42,27 @@ Expected:
 ask-dongfeng
 ```
 
+If an existing user previously installed Ask DongFeng as a local skill, Hermes
+may show it under `--source all` as `local` instead of `builtin`. That is safe:
+the runtime can still preload it. To force the bundled copy:
+
+```bash
+python -m hermes_cli.main skills reset ask-dongfeng --restore
+```
+
 One-shot usage:
+
+```bash
+python -m hermes_cli.main dongfeng -q "Turn a fuzzy product idea into a reviewable MVP spec."
+```
+
+Mode-specific usage:
+
+```bash
+python -m hermes_cli.main dongfeng --mode intent-to-spec -q "Build an open-source Hermes skill that turns fuzzy product ideas into reviewable MVP specs."
+```
+
+Legacy equivalent:
 
 ```bash
 python -m hermes_cli.main chat --skills ask-dongfeng -q "Use Ask DongFeng in intent-to-spec mode: turn a fuzzy product idea into a reviewable MVP spec."
@@ -61,4 +81,3 @@ It should not claim to be a new agent runtime until the core loop or Desktop is 
 Hermes Agent is built by Nous Research and licensed under MIT.
 
 This distribution keeps upstream attribution and license files intact.
-

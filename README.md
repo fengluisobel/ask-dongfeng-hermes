@@ -1,3 +1,16 @@
+> Ask DongFeng Hermes is an independent Hermes Agent distribution with the
+> `ask-dongfeng` control-loop workflow skill bundled and a direct
+> `hermes dongfeng` entry point.
+>
+> Quick start:
+>
+> ```bash
+> hermes dongfeng -q "Turn this fuzzy product idea into a reviewable MVP spec."
+> ```
+>
+> See [ASK_DONGFENG_DISTRIBUTION.md](ASK_DONGFENG_DISTRIBUTION.md) and
+> [docs/ask-dongfeng/user-start.md](docs/ask-dongfeng/user-start.md).
+
 <p align="center">
   <img src="assets/banner.png" alt="Hermes Agent" width="100%">
 </p>

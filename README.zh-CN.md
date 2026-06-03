@@ -1,3 +1,16 @@
+> Ask DongFeng Hermes 是一个独立的 Hermes Agent 发行版，内置
+> `ask-dongfeng` 工程控制论闭环工作流 skill，并提供直接入口
+> `hermes dongfeng`。
+>
+> 快速开始：
+>
+> ```bash
+> hermes dongfeng -q "把这个模糊产品想法变成可审查 MVP spec。"
+> ```
+>
+> 参见 [ASK_DONGFENG_DISTRIBUTION.md](ASK_DONGFENG_DISTRIBUTION.md) 和
+> [docs/ask-dongfeng/user-start.md](docs/ask-dongfeng/user-start.md)。
+
 <p align="center">
   <img src="assets/banner.png" alt="Hermes Agent" width="100%">
 </p>

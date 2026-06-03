@@ -41,6 +41,8 @@ _EPILOGUE = """
 Examples:
     hermes                        Start interactive chat
     hermes chat -q "Hello"        Single query mode
+    hermes dongfeng               Start with Ask DongFeng preloaded
+    hermes dongfeng -q "Goal"     Single Ask DongFeng query
     hermes -c                     Resume the most recent session
     hermes -c "my project"        Resume a session by name (latest in lineage)
     hermes --resume <session_id>  Resume a specific session by ID

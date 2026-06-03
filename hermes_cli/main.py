@@ -1334,6 +1334,263 @@ def _pin_kanban_board_env() -> None:
         pass
 
 
+_ASK_DONGFENG_SKILL = "ask-dongfeng"
+_ASK_DONGFENG_MODES = (
+    "intent-to-spec",
+    "plan-guard",
+    "spike-control",
+    "review-gate",
+    "iteration-loop",
+)
+
+
+def _normalize_skill_args(skills: object = None) -> list[str]:
+    """Normalize argparse skill values while preserving user order."""
+    if not skills:
+        return []
+
+    raw_items = [skills] if isinstance(skills, str) else skills
+    if not isinstance(raw_items, (list, tuple)):
+        raw_items = [raw_items]
+
+    normalized: list[str] = []
+    for item in raw_items:
+        for part in str(item).split(","):
+            skill = part.strip()
+            if skill and skill not in normalized:
+                normalized.append(skill)
+    return normalized
+
+
+def _with_ask_dongfeng_skill(skills: object = None) -> list[str]:
+    normalized = _normalize_skill_args(skills)
+    if _ASK_DONGFENG_SKILL not in normalized:
+        normalized.append(_ASK_DONGFENG_SKILL)
+    return normalized
+
+
+def _build_dongfeng_query(
+    query: Optional[str],
+    mode: Optional[str] = None,
+    artifact_only: bool = False,
+) -> Optional[str]:
+    if not query:
+        return query
+
+    directive_parts = ["Use Ask DongFeng"]
+    if mode:
+        directive_parts.append(f"in {mode} mode")
+    directive = " ".join(directive_parts) + "."
+    if artifact_only:
+        directive += " Output only the machine-readable control-artifact YAML."
+    return f"{directive}\n\n{query}"
+
+
+def cmd_dongfeng(args):
+    """Run Hermes chat with Ask DongFeng preloaded."""
+    for attr, default in [
+        ("query", None),
+        ("image", None),
+        ("model", None),
+        ("provider", None),
+        ("toolsets", None),
+        ("verbose", False),
+        ("quiet", False),
+        ("resume", None),
+        ("continue_last", None),
+        ("worktree", False),
+        ("checkpoints", False),
+        ("pass_session_id", False),
+        ("max_turns", None),
+        ("ignore_rules", False),
+        ("ignore_user_config", False),
+        ("source", None),
+        ("tui", False),
+        ("tui_dev", False),
+        ("yolo", False),
+        ("accept_hooks", False),
+        ("mode", None),
+        ("artifact_only", False),
+        ("prompt", None),
+    ]:
+        if not hasattr(args, attr):
+            setattr(args, attr, default)
+
+    if getattr(args, "prompt", None) and not getattr(args, "query", None):
+        args.query = args.prompt
+
+    args.skills = _with_ask_dongfeng_skill(getattr(args, "skills", None))
+    args.query = _build_dongfeng_query(
+        getattr(args, "query", None),
+        mode=getattr(args, "mode", None),
+        artifact_only=getattr(args, "artifact_only", False),
+    )
+    cmd_chat(args)
+
+
+def _register_dongfeng_parser(subparsers):
+    dongfeng_parser = subparsers.add_parser(
+        "dongfeng",
+        help="Start Hermes with Ask DongFeng preloaded",
+        description=(
+            "Start a Hermes chat session with the built-in ask-dongfeng skill "
+            "preloaded. Use it for control-loop specs, guarded plans, spikes, "
+            "review gates, and iteration loops."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  hermes dongfeng\n"
+            "  hermes dongfeng -q \"Turn this fuzzy product idea into an MVP spec.\"\n"
+            "  hermes dongfeng --mode plan-guard -q \"Guard this implementation plan.\"\n"
+            "  hermes dongfeng --artifact-only -q \"Create a control artifact for this goal.\"\n"
+        ),
+    )
+    dongfeng_parser.add_argument(
+        "prompt",
+        nargs="?",
+        default=None,
+        help="Optional single prompt. Equivalent to --query when --query is not provided.",
+    )
+    dongfeng_parser.add_argument(
+        "-q",
+        "--query",
+        default=None,
+        help="Single Ask DongFeng query (non-interactive mode)",
+    )
+    dongfeng_parser.add_argument(
+        "--mode",
+        choices=_ASK_DONGFENG_MODES,
+        default=None,
+        help="Ask DongFeng operating mode to request",
+    )
+    dongfeng_parser.add_argument(
+        "--artifact-only",
+        action="store_true",
+        default=False,
+        help="Request only the machine-readable control-artifact YAML",
+    )
+    dongfeng_parser.add_argument(
+        "--image", default=None, help="Optional local image path to attach to a single query"
+    )
+    dongfeng_parser.add_argument(
+        "-m",
+        "--model",
+        default=argparse.SUPPRESS,
+        help="Model to use (e.g., anthropic/claude-sonnet-4)",
+    )
+    dongfeng_parser.add_argument(
+        "--provider",
+        default=argparse.SUPPRESS,
+        help="Inference provider (default: auto). Built-in or user-defined.",
+    )
+    dongfeng_parser.add_argument(
+        "-t",
+        "--toolsets",
+        default=argparse.SUPPRESS,
+        help="Comma-separated toolsets to enable",
+    )
+    dongfeng_parser.add_argument(
+        "-s",
+        "--skills",
+        action="append",
+        default=argparse.SUPPRESS,
+        help="Add extra skills alongside ask-dongfeng (repeat flag or comma-separate)",
+    )
+    dongfeng_parser.add_argument(
+        "-v", "--verbose", action="store_true", default=False, help="Verbose output"
+    )
+    dongfeng_parser.add_argument(
+        "-Q",
+        "--quiet",
+        action="store_true",
+        default=False,
+        help="Quiet mode for programmatic use",
+    )
+    dongfeng_parser.add_argument(
+        "--resume",
+        "-r",
+        metavar="SESSION_ID",
+        default=argparse.SUPPRESS,
+        help="Resume a previous session by ID",
+    )
+    dongfeng_parser.add_argument(
+        "--continue",
+        "-c",
+        dest="continue_last",
+        nargs="?",
+        const=True,
+        default=argparse.SUPPRESS,
+        metavar="SESSION_NAME",
+        help="Resume a session by name, or the most recent if no name given",
+    )
+    dongfeng_parser.add_argument(
+        "--worktree",
+        "-w",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Run in an isolated git worktree",
+    )
+    _add_accept_hooks_flag(dongfeng_parser)
+    dongfeng_parser.add_argument(
+        "--checkpoints",
+        action="store_true",
+        default=False,
+        help="Enable filesystem checkpoints before destructive file operations",
+    )
+    dongfeng_parser.add_argument(
+        "--max-turns",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Maximum tool-calling iterations per conversation turn",
+    )
+    dongfeng_parser.add_argument(
+        "--yolo",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Bypass all dangerous command approval prompts (use at your own risk)",
+    )
+    dongfeng_parser.add_argument(
+        "--pass-session-id",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Include the session ID in the agent's system prompt",
+    )
+    dongfeng_parser.add_argument(
+        "--ignore-user-config",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Ignore ~/.hermes/config.yaml and fall back to built-in defaults",
+    )
+    dongfeng_parser.add_argument(
+        "--ignore-rules",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Skip AGENTS.md, SOUL.md, .cursorrules, memory, and configured skills",
+    )
+    dongfeng_parser.add_argument(
+        "--source",
+        default=None,
+        help="Session source tag for filtering (default: cli)",
+    )
+    dongfeng_parser.add_argument(
+        "--tui",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Launch the modern TUI instead of the classic REPL",
+    )
+    dongfeng_parser.add_argument(
+        "--dev",
+        dest="tui_dev",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="With --tui: run TypeScript sources via tsx",
+    )
+    dongfeng_parser.set_defaults(func=cmd_dongfeng)
+    return dongfeng_parser
+
+
 def cmd_chat(args):
     """Run interactive chat CLI."""
     use_tui = getattr(args, "tui", False) or os.environ.get("HERMES_TUI") == "1"
@@ -8880,7 +9137,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "acp", "auth", "backup", "checkpoints", "claw", "completion",
         "config", "cron", "curator", "dashboard", "debug", "doctor",
         "dump", "fallback", "gateway", "hooks", "import", "insights",
-        "kanban", "login", "logout", "logs", "mcp", "memory", "model",
+        "dongfeng", "kanban", "login", "logout", "logs", "mcp", "memory", "model",
         "pairing", "plugins", "profile", "sessions", "setup", "skills",
         "slack", "status", "tools", "uninstall", "update", "version",
         "webhook", "whatsapp", "chat",
@@ -8986,6 +9243,8 @@ def main():
 
     parser, subparsers, chat_parser = build_top_level_parser()
     chat_parser.set_defaults(func=cmd_chat)
+
+    _register_dongfeng_parser(subparsers)
 
     # =========================================================================
     # model command
