@@ -22,23 +22,4 @@
 # which is exactly when we want to move the pin.
 
 version: 2
-updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "github-actions"
-    commit-message:
-      prefix: "chore(actions)"
-      include: "scope"
-    groups:
-      # Batch routine action bumps into one PR per week to reduce noise.
-      # Security updates still open individually and bypass grouping.
-      actions-minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
+updates: []
